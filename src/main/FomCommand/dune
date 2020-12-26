@@ -1,0 +1,3 @@
+(executable
+ (name FomCommand)
+ (libraries FomSyntax FomParser FomChecker))

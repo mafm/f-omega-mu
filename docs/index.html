@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Fωμ toy type checker</title>
+  <link rel="stylesheet" type="text/css" href="github.css" />
+  <link rel="stylesheet" type="text/css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.2/codemirror.min.css" />
+  <style type="text/css">
+    .markdown-body {
+      box-sizing: border-box;
+      min-width: 200px;
+      max-width: 980px;
+      margin: 45px auto;
+      padding: 45px;
+      border: 1px #ddd solid;
+      border-radius: 3px;
+    }
+
+    .markdown-body>pre {
+      padding: 11px;
+    }
+
+    .CodeMirror {
+      font: 13.6px Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      line-height: 19.72px;
+      height: auto;
+    }
+
+    #fomTag .CodeMirror {
+      border: 1px #f7f7f7 solid;
+      border-radius: 5px;
+    }
+
+    #fomTag .CodeMirror:hover {
+      border: 1px #ddd solid;
+    }
+
+    #jsTag .CodeMirror,
+    #typTag .CodeMirror {
+      background: transparent;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+
+<body class="markdown-body">
+  <h1>
+    Fωμ toy type checker &mdash; Playground
+    <a href="https://github.com/polytypic/f-omega-mu"><img
+        src="https://img.shields.io/github/stars/polytypic/f-omega-mu.svg?style=social" alt="GitHub stars" /></a>
+  </h1>
+  <pre><div id="fomTag"></div><div id="typTag"></div></pre>
+  <p>Try Fωμ above!
+  <ul>
+    <li><a target="_blank" href="https://github.com/polytypic/f-omega-mu/blob/main/SYNTAX.md">Syntax summary</a></li>
+    <li><a target="_blank" href="https://github.com/polytypic/f-omega-mu/">GitHub project</a></li>
+  </ul>
+  </p>
+  <p>Transpiled JavaScript:</p>
+  <pre><div id="jsTag"></div></pre>
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.2/codemirror.min.js"></script>
+  <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.2/mode/javascript/javascript.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+  <script type="text/javascript" src="FomSandbox.js"></script>
+  <script type="text/javascript">
+    const writable = Object.freeze({ writable: true })
+    const rec = (fn) => {
+      let knot
+      const proxy = (x) => knot(x)
+      knot = fn(proxy)
+      if (typeof knot === 'object') {
+        Object.defineProperty(proxy, 'length', writable)
+        Object.assign(proxy, knot)
+      }
+      return knot
+    }
+  </script>
+  <script type="module">
+    import prettier from 'https://unpkg.com/prettier@2.2.1/esm/standalone.mjs'
+    import parserBabel from 'https://unpkg.com/prettier@2.2.1/esm/parser-babel.mjs'
+
+    CodeMirror.defineMode('fom', () => {
+      return {
+        token(stream) {
+          const { begins, ends, name } = fom.token(
+            stream.string.slice(stream.start)
+          )
+          if (name === 'error') {
+            stream.skipToEnd()
+            return name
+          } else {
+            stream.start += begins
+            stream.pos += ends
+          }
+          return name
+        },
+      }
+    })
+
+    const hash = location.hash.slice(1)
+
+    const value = hash && LZString.decompressFromEncodedURIComponent(hash)
+
+    const fomCM = CodeMirror(fomTag, {
+      autofocus: true,
+      cursorBlinkRate: 0,
+      indentUnit: 2,
+      lineNumbers: true,
+      mode: 'fom',
+      tabSize: 2,
+      value,
+    })
+
+    const typCM = CodeMirror(typTag, {
+      cursorBlinkRate: 0,
+      mode: null,
+      readOnly: true,
+    })
+
+    const jsCM = CodeMirror(jsTag, {
+      cursorBlinkRate: 0,
+      lineNumbers: true,
+      mode: 'javascript',
+      readOnly: true,
+    })
+
+    fomCM.setOption('extraKeys', {
+      Tab: () => {
+        const spaces = Array(fomCM.getOption('indentUnit') + 1).join(' ')
+        fomCM.replaceSelection(spaces)
+      },
+    })
+
+    const throttled = (fn, ms = 250) => {
+      let timeout = null
+      return () => {
+        clearTimeout(timeout)
+        timeout = setTimeout(fn, ms)
+      }
+    }
+
+    const update = throttled(() => {
+      const exp = fomCM.getValue()
+      const { typ, js } = fom.process(exp)
+      typCM.setValue(typ)
+      jsCM.setValue(
+        prettier
+          .format(js, {
+            arrowParens: 'avoid',
+            bracketSpacing: false,
+            parser: 'babel',
+            plugins: [parserBabel],
+            singleQuote: true,
+            trailingComma: 'none',
+          })
+          .trim()
+      )
+      const compressedText = LZString.compressToEncodedURIComponent(exp)
+      history.replaceState(null, '', `${location.pathname}#${compressedText}`)
+    })
+
+    update()
+
+    fomCM.on('change', update)
+  </script>
+</body>
+
+</html>
