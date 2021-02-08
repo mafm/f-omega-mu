@@ -50,6 +50,7 @@ let rec token_or_comment buffer =
   | "{" -> return BraceLhs
   | "}" -> return BraceRhs
   (* *)
+  | "and" -> return And
   | "bool" -> return Bool
   | "else" -> return Else
   | "false" -> return (BoolLit false)
@@ -112,6 +113,7 @@ let token_info_utf_8 input =
     ends = rhs.pos_cnum - lhs.pos_bol;
     name =
       (match token with
+      | And -> keyword
       | ArrowRight -> operator
       | Bool -> builtin
       | BoolLit _ -> atom

@@ -105,6 +105,8 @@ let rec let_typ_in id typ ({it; at} as exp) =
     fs |> List.map (fun (l, e) -> (l, let_typ_in id typ e)) |> product at
   | Select (e, l) -> select at (let_typ_in id typ e) l
 
+let let_rec_in _ e = e
+
 (* Constants *)
 
 let lit_bool at value =

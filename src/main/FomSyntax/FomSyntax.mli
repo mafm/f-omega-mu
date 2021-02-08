@@ -146,6 +146,7 @@ module Exp : sig
   (* Macros *)
 
   val let_typ_in : Typ.Id.t -> Typ.t -> t -> t
+  val let_rec_in : (Id.t * (Id.t * Typ.t) list * Typ.t * t) List.t -> t -> t
 
   (* Constants *)
 

@@ -2,6 +2,7 @@
 %token <bool> BoolLit
 %token <string> Id
 %token <string> Comment
+%token And "and"
 %token ArrowRight "→"
 %token Bool "bool"
 %token BraceLhs "{"
@@ -177,6 +178,14 @@ exp:
   | "let" "type" i=typ_id "=" t=typ "in" e=exp        {Exp.let_typ_in i t e}
   | "let" i=exp_id "=" v=exp "in" e=exp               {Exp.let_in $loc i v e}
   | "if" c=exp "then" t=exp "else" e=exp              {Exp.if_else $loc c t e}
+
+  | "let" "μ" ds=list_1(def, "and") "in" e=exp        {Exp.let_rec_in ds e}
+
+def:
+  | i=exp_id ps=list_1(arg, ",") ":" t=typ "=" v=exp  {(i, ps, t, v)}
+
+arg:
+  | "(" i=exp_id ":" t=typ ")"                        {(i, t)}
 
 //
 
